@@ -2,18 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>K-means Demo</title>
     <link rel="stylesheet" href="css/bootstrap.css">
 
     <script src="js/jquery-3.2.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
     <script src="js/kmeans.js"></script>
 </head>
 <body>
 <div class="container">
     <div class="jumbotron">
+        <h2 class="text-center">K-means</h2>
         <div class="panel panel-default">
             <div class="panel-body">
-                <canvas id="canvas" width="960px" height="340"></canvas>
+                <canvas id="canvas" width="990px" height="340"></canvas>
             </div>
             <div class="panel-footer">
                 <div class="row">
@@ -32,6 +35,10 @@
                             </span>
                             <input id="centroids-count" type="text" class="form-control" value="5" placeholder="Number of centroids">
                         </div>
+                    </div>
+                    <div class="col-lg-3"></div>
+                    <div class="col-lg-3">
+                       <button class="btn btn-default">Import csv</button>
                     </div>
                 </div>
                 <hr>

@@ -4,7 +4,6 @@ $(document).ready(function () {
     kmeans.createPoints($('#point-count').val());
     kmeans.createCentroids($('#centroids-count').val());
 
-
     $('#random-points').click(function () {
         kmeans.createPoints($('#point-count').val());
     });
@@ -15,8 +14,29 @@ $(document).ready(function () {
 
     $('#step').click(function () {
         kmeans.step();
-    })
+    });
+
+    $('[data-toggle="tooltip"]').tooltip();
 });
+
+function Point(canvas, x, y, size, stroke, fill) {
+    this.canvas = canvas;
+    this.x = x;
+    this.y = y;
+    this.size = size;
+    this.stroke = stroke;
+    this.fill = fill;
+
+    this.paint = function () {
+        this.canvas.beginPath();
+        this.canvas.arc(this.x, this.y, this.size, 0, Math.PI * 2, true);
+        this.canvas.closePath();
+        this.canvas.fillStyle = this.fill;
+        this.canvas.fill();
+        this.canvas.strokeStyle = this.stroke;
+        this.canvas.stroke();
+    }
+}
 
 
 function KMeans(canvas) {
@@ -28,19 +48,38 @@ function KMeans(canvas) {
     this.centroids = [];
     this.assignments = [];
 
+    canvas.addEventListener('mousemove', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var BB = canvas.getBoundingClientRect();
+        var offsetX = BB.left;
+        var offsetY = BB.top;
+
+        var mouseX = parseInt(e.clientX - offsetX);
+        var mouseY = parseInt(e.clientY - offsetY);
+        this.repaint();
+        $.each([this.samples, this.centroids], function (index, array) {
+            $.each(array, function (index, point) {
+                var dx = mouseX - point.x;
+                var dy = mouseY - point.y;
+                if (dx * dx + dy * dy < point.size * point.size) {
+                    this.canvas.font = 'bold 16px Arial';
+                    this.canvas.fillStyle = 'black';
+                    this.canvas.fillText('(' + point.x + ', ' + point.y + ')', point.x + 10, point.y + 10);
+                }
+            }.bind(this));
+        }.bind(this));
+    }.bind(this));
+
     this.createPoints = function (number) {
         this.samples = [];
+        this.assignments = [];
 
         for (var i = 0; i < number; i++) {
             var x = getRandomInt(10, this.width - 10);
             var y = getRandomInt(10, this.height - 10);
-            this.samples.push({
-                x: x,
-                y: y,
-                size: 5,
-                stroke: 'black',
-                fill: 'rgba(255, 0, 0, 0.0)'
-            });
+            this.samples.push(new Point(this.canvas, x, y, 5, 'black', 'rgba(255, 0, 0, 0.0)'));
         }
 
         this.repaint();
@@ -48,18 +87,13 @@ function KMeans(canvas) {
 
     this.createCentroids = function (number) {
         this.centroids = [];
+        this.assignments = [];
 
         for (var i = 0; i < number; i++) {
             var x = getRandomInt(10, this.width - 10);
             var y = getRandomInt(10, this.height - 10);
             var color = rainbow(number, i);
-            this.centroids.push({
-                x: x,
-                y: y,
-                size: 7,
-                stroke: color,
-                fill: color
-            });
+            this.centroids.push(new Point(this.canvas, x, y, 7, color, color));
         }
 
         this.repaint();
@@ -82,7 +116,6 @@ function KMeans(canvas) {
                 return (this.assignments[i_sample] === centroidIndex);
             }.bind(this));
 
-
             if (cluster.length > 0) {
                 this.centroids[centroidIndex].x = 0;
                 this.centroids[centroidIndex].y = 0;
@@ -101,24 +134,18 @@ function KMeans(canvas) {
 
         $.each([this.samples, this.centroids], function (index, array) {
             $.each(array, function (index, point) {
-                this.canvas.beginPath();
-                this.canvas.arc(point.x, point.y, point.size, 0, Math.PI * 2, true);
-                this.canvas.closePath();
-                this.canvas.fillStyle = point.fill;
-                this.canvas.fill();
-                this.canvas.strokeStyle = point.stroke;
-                this.canvas.stroke();
+                point.paint();
             }.bind(this));
         }.bind(this));
 
         $.each(this.assignments, function (sample_num, mean_num) {
-            var mean = this.centroids[mean_num];
+            var centroid = this.centroids[mean_num];
             var sample = this.samples[sample_num];
 
             this.canvas.beginPath();
-            this.canvas.moveTo(mean.x, mean.y);
+            this.canvas.moveTo(centroid.x, centroid.y);
             this.canvas.lineTo(sample.x, sample.y);
-            this.canvas.strokeStyle = 'magenta';
+            this.canvas.strokeStyle = centroid.fill;
             this.canvas.stroke();
         }.bind(this));
     };
