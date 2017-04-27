@@ -1,26 +1,30 @@
 $(document).ready(function () {
     var kmeans = new KMeans($('#canvas')[0]);
+    var stepCount = 0;
 
     kmeans.createPoints($('#point-count').val());
     kmeans.createCentroids($('#centroids-count').val());
 
     $('#random-points').click(function () {
+        stepCount = 0;
         kmeans.createPoints($('#point-count').val());
     });
 
     $('#random-centroids').click(function () {
+        stepCount = 0;
         kmeans.createCentroids($('#centroids-count').val());
     });
 
     $('#csv-file-selector').on('change', function (e) {
         readFile(e, function (contents) {
-            console.warn("CRRR");
+            stepCount = 0;
             kmeans.createPoints(null, contents);
         });
     });
 
     $('#step').click(function () {
         kmeans.step();
+        $('#step-count').text(++stepCount);
     });
 });
 
