@@ -12,11 +12,16 @@ $(document).ready(function () {
         kmeans.createCentroids($('#centroids-count').val());
     });
 
+    $('#csv-file-selector').on('change', function (e) {
+        readFile(e, function (contents) {
+            console.warn("CRRR");
+            kmeans.createPoints(null, contents);
+        });
+    });
+
     $('#step').click(function () {
         kmeans.step();
     });
-
-    $('[data-toggle="tooltip"]').tooltip();
 });
 
 function Point(canvas, x, y, size, stroke, fill) {
@@ -66,20 +71,40 @@ function KMeans(canvas) {
                 if (dx * dx + dy * dy < point.size * point.size) {
                     this.canvas.font = 'bold 16px Arial';
                     this.canvas.fillStyle = 'black';
+                    console.warn(point.x, point.y);
                     this.canvas.fillText('(' + point.x + ', ' + point.y + ')', point.x + 10, point.y + 10);
                 }
             }.bind(this));
         }.bind(this));
     }.bind(this));
 
-    this.createPoints = function (number) {
+    this.createPoints = function (number, data) {
         this.samples = [];
         this.assignments = [];
 
-        for (var i = 0; i < number; i++) {
-            var x = getRandomInt(10, this.width - 10);
-            var y = getRandomInt(10, this.height - 10);
-            this.samples.push(new Point(this.canvas, x, y, 5, 'black', 'rgba(255, 0, 0, 0.0)'));
+        var size = 5;
+        var stroke = 'black';
+        var fill = 'rgba(255, 0, 0, 0.0)';
+
+        if (data) {
+            this.centroids = [];
+            var lines = data.split('\n');
+            for (var j = 0; j < lines.length; j++) {
+                if (lines[j].length) {
+                    var coordinates = lines[j].split(',');
+                    this.samples.push(new Point(this.canvas, +coordinates[0], +coordinates[1], size, stroke, fill));
+                    if (coordinates[2] && coordinates[3]) {
+                        var color = rainbow(lines.length, j);
+                        this.centroids.push(new Point(this.canvas, +coordinates[2], +coordinates[3], 7, color, color));
+                    }
+                }
+            }
+        } else {
+            for (var i = 0; i < number; i++) {
+                var x = getRandomInt(10, this.width - 10);
+                var y = getRandomInt(10, this.height - 10);
+                this.samples.push(new Point(this.canvas, x, y, size, stroke, fill));
+            }
         }
 
         this.repaint();
@@ -153,6 +178,18 @@ function KMeans(canvas) {
     this.reset = function () {
         this.canvas.clearRect(0, 0, this.width, this.height);
     }
+}
+
+function readFile(e, cb) {
+    var file = e.target.files[0];
+    if (!file) {
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        cb(e.target.result);
+    };
+    reader.readAsText(file);
 }
 
 function getRandomInt(min, max) {

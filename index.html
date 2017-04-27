@@ -6,7 +6,6 @@
     <link rel="stylesheet" href="css/bootstrap.css">
 
     <script src="js/jquery-3.2.1.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
 
     <script src="js/kmeans.js"></script>
 </head>
@@ -38,7 +37,10 @@
                     </div>
                     <div class="col-lg-3"></div>
                     <div class="col-lg-3">
-                       <button class="btn btn-default">Import csv</button>
+                        <label class="btn btn-default pull-right" for="csv-file-selector">
+                            <input id="csv-file-selector" type="file" style="display:none;">
+                            Import csv
+                        </label>
                     </div>
                 </div>
                 <hr>
