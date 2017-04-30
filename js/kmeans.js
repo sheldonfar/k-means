@@ -21,7 +21,7 @@ $(document).ready(function () {
     $('#step').click(function () {
         kmeans.makeStep();
         $('#step-count').text(kmeans.step);
-        $('#purity-count').text(kmeans.purity);
+        $('#purity-count').text(kmeans.purity !== 0 ? kmeans.purity : '?');
     });
 });
 
@@ -191,7 +191,7 @@ function KMeans(canvas) {
             sum += max;
         }
 
-        this.purity = (sum / this.assignments.length).toFixed(2);
+        this.purity = +(sum / this.assignments.length).toFixed(2);
     };
 
     this.repaint = function () {
