@@ -1,30 +1,27 @@
 $(document).ready(function () {
     var kmeans = new KMeans($('#canvas')[0]);
-    var stepCount = 0;
 
     kmeans.createPoints($('#point-count').val());
     kmeans.createCentroids($('#centroids-count').val());
 
     $('#random-points').click(function () {
-        stepCount = 0;
         kmeans.createPoints($('#point-count').val());
     });
 
     $('#random-centroids').click(function () {
-        stepCount = 0;
         kmeans.createCentroids($('#centroids-count').val());
     });
 
     $('#csv-file-selector').on('change', function (e) {
         readFile(e, function (contents) {
-            stepCount = 0;
             kmeans.createPoints(null, contents);
         });
     });
 
     $('#step').click(function () {
-        kmeans.step();
-        $('#step-count').text(++stepCount);
+        kmeans.makeStep();
+        $('#step-count').text(kmeans.step);
+        $('#purity-count').text(kmeans.purity);
     });
 });
 
@@ -56,8 +53,11 @@ function KMeans(canvas) {
     this.samples = [];
     this.centroids = [];
     this.assignments = [];
+    this.clusters = [];
+    this.purity = 0;
+    this.step = 0;
 
-    canvas.addEventListener('mousemove', function(e) {
+    canvas.addEventListener('mousemove', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -75,7 +75,6 @@ function KMeans(canvas) {
                 if (dx * dx + dy * dy < point.size * point.size) {
                     this.canvas.font = 'bold 16px Arial';
                     this.canvas.fillStyle = 'black';
-                    console.warn(point.x, point.y);
                     this.canvas.fillText('(' + point.x + ', ' + point.y + ')', point.x + 10, point.y + 10);
                 }
             }.bind(this));
@@ -83,6 +82,8 @@ function KMeans(canvas) {
     }.bind(this));
 
     this.createPoints = function (number, data) {
+        this.step = 0;
+        this.purity = 0;
         this.samples = [];
         this.assignments = [];
 
@@ -91,16 +92,12 @@ function KMeans(canvas) {
         var fill = 'rgba(255, 0, 0, 0.0)';
 
         if (data) {
-            this.centroids = [];
             var lines = data.split('\n');
             for (var j = 0; j < lines.length; j++) {
                 if (lines[j].length) {
                     var coordinates = lines[j].split(',');
                     this.samples.push(new Point(this.canvas, +coordinates[0], +coordinates[1], size, stroke, fill));
-                    if (coordinates[2] && coordinates[3]) {
-                        var color = rainbow(lines.length, j);
-                        this.centroids.push(new Point(this.canvas, +coordinates[2], +coordinates[3], 7, color, color));
-                    }
+                    this.clusters.push(+coordinates[2]);
                 }
             }
         } else {
@@ -115,6 +112,8 @@ function KMeans(canvas) {
     };
 
     this.createCentroids = function (number) {
+        this.step = 0;
+        this.purity = 0;
         this.centroids = [];
         this.assignments = [];
 
@@ -128,7 +127,7 @@ function KMeans(canvas) {
         this.repaint();
     };
 
-    this.step = function () {
+    this.makeStep = function () {
         $.each(this.samples, function (index, sample) {
             var dists = $.map(this.centroids, function (centroid) {
                 return Math.sqrt(Math.pow(sample.x - centroid.x, 2) + Math.pow(sample.y - centroid.y, 2));
@@ -137,6 +136,8 @@ function KMeans(canvas) {
         }.bind(this));
 
         this.updateCentroids();
+
+        this.step++;
     };
 
     this.updateCentroids = function () {
@@ -155,7 +156,42 @@ function KMeans(canvas) {
             }
         }.bind(this));
 
+        this.updatePurity();
+
         this.repaint();
+    };
+
+    this.updatePurity = function () {
+        var sum = 0,
+            frequency = {},
+            classes = this.clusters.filter(function (itm, i, a) {
+                return i === a.indexOf(itm);
+            }), foundClasses = [];
+
+        for (var i = 0; i < this.clusters.length; i++) {
+            if (typeof this.clusters[i - 1] === 'undefined' || this.clusters[i] !== this.clusters[i - 1]) {
+                frequency[this.clusters[i]] = {};
+                for (var j = 0; j < classes.length; j++) {
+                    frequency[this.clusters[i]][classes[j]] = 0;
+                }
+            }
+            frequency[this.clusters[i]][this.assignments[i]]++;
+        }
+
+        for (var prop in frequency) {
+            var arr = Object.keys(frequency[prop]).map(function (key) {
+                if (foundClasses.indexOf(+key) === -1) {
+                    return frequency[prop][key];
+                } else {
+                    return 0;
+                }
+            });
+            var max = Math.max.apply(null, arr);
+            foundClasses.push(arr.indexOf(max));
+            sum += max;
+        }
+
+        this.purity = (sum / this.assignments.length).toFixed(2);
     };
 
     this.repaint = function () {
@@ -181,7 +217,7 @@ function KMeans(canvas) {
 
     this.reset = function () {
         this.canvas.clearRect(0, 0, this.width, this.height);
-    }
+    };
 }
 
 function readFile(e, cb) {
@@ -190,7 +226,7 @@ function readFile(e, cb) {
         return;
     }
     var reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         cb(e.target.result);
     };
     reader.readAsText(file);
@@ -214,6 +250,6 @@ function rainbow(numOfSteps, step) {
         case 4: r = f; g = 0; b = 1; break;
         case 5: r = 1; g = 0; b = q; break;
     }
-    var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
+    var c = "#" + ("00" + (~~(r * 255)).toString(16)).slice(-2) + ("00" + (~~(g * 255)).toString(16)).slice(-2) + ("00" + (~~(b * 255)).toString(16)).slice(-2);
     return (c);
 }
